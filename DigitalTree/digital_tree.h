@@ -14,20 +14,10 @@ class digital_tree
         bool terminal_bit = false;
         // const size_t parent_pos;   // POsition in relation to its parent node
         std::vector<std::shared_ptr<Node>> pointer_vec;
-        Node(bool t, std::size_t alphabet_sz) : terminal_bit {t}, pointer_vec(alphabet_sz, nullptr){
-            // pointer_vec.reserve(alphabet_sz);
-            // pointer_vec.assign(alphabet_sz, nullptr);
-        }
-        std::vector<std::shared_ptr<Node>> & get_pointers() {
-            return pointer_vec;
-        }
-        bool get_terminal() {
-            return terminal_bit;
-        }
-        void set_terminal() {
-            terminal_bit = true;
-        }
-
+        Node(bool t, std::size_t alphabet_sz) : terminal_bit {t}, pointer_vec(alphabet_sz, nullptr) {}
+        std::vector<std::shared_ptr<Node>> & get_pointers() { return pointer_vec; }
+        bool get_terminal() { return terminal_bit; }
+        void set_terminal() { terminal_bit = true; }
     };
 private:
     std::vector<char> alphabet; //!< Char array representing the alphabet 
@@ -42,16 +32,9 @@ public:
 private:
     std::size_t digit_idx(char c);
     std::pair<std::size_t, std::shared_ptr<digital_tree::Node>> __search(const std::string & key);
-    Node visit(const std::shared_ptr<Node> pt) const;
+    std::shared_ptr<digital_tree::Node> __rem_search(const std::string & key);
+    bool is_prefix(std::shared_ptr<digital_tree::Node> n, std::size_t char_idx) const;
 };
-
-// digital_tree::digital_tree(/* args */)
-// {
-// }
-
-// digital_tree::~digital_tree()
-// {
-// }
 #endif // __DIGITAL__
 
 
