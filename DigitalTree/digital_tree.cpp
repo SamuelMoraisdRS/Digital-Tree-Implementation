@@ -1,8 +1,9 @@
 #include "digital_tree.h"
 #include <algorithm>    // std::sort
+#include <tuple>    
 
 //  Comment the line below if you don't want to print the debug msgs
-// #define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
     #define DEBUG_MSG(str) do { std::cout << str << std::endl; } while( false )
@@ -34,7 +35,7 @@ std::size_t digital_tree::digit_idx(char c) {
     } return -1;    // TODO: replace with an exception
 }
 
-std::pair<std::size_t, std::shared_ptr<digital_tree::Node>> digital_tree::__search(const std::string & key) {
+std::pair<std::size_t, digital_tree::NodePtr> digital_tree::__search(const std::string & key) {
     auto ptr = root;
     std::size_t prefix_sz {0};
     while (prefix_sz != key.size()) {
@@ -76,49 +77,118 @@ void digital_tree::insert(const std::string & key) {
             char_runner++;
         }
         // Sets the last node's terminal bit
-        ptr->set_terminal();
+        ptr->set_terminal(true);
         return;
     } std::cerr << "Key already exists: \"" << key << "\"" << std::endl; // TODO: replace with an exception
 }
 
 
-bool digital_tree::is_prefix(std::shared_ptr<digital_tree::Node> n, std::size_t char_idx) const {
+bool digital_tree::is_prefix(digital_tree::NodePtr n, std::size_t char_idx) const {
     for (std::size_t i {0}; i < n->get_pointers().size(); i++) {
         if (i == char_idx && n->get_pointers()[i] != nullptr) {
             return true;
         }
     } return false;
 }
-
-std::shared_ptr<digital_tree::Node> digital_tree::__rem_search(const std::string & key) {
-    // We´ll return the last node with more than one not-null child
-    auto ptr {root};
-    auto prefix_node {ptr}; // the last Node which is a prefix to another key
-    std::size_t prefix_sz {0};
-    while (prefix_sz != key.size()) {
-        // We already know the key is in the tree, no need to check
-        auto pointer_pos {digit_idx(key.at(prefix_sz))};
-        if (is_prefix(ptr, pointer_pos)) {
-            prefix_node = ptr;
+bool digital_tree::is_prefix(digital_tree::NodePtr n) const {
+    for (std::size_t i {0}; i < n->get_pointers().size(); i++) {
+        if (n->get_pointers()[i] != nullptr) {
+            return true;
         }
-        prefix_sz++;
-        ptr = ptr->get_pointers()[pointer_pos];
+    } return false;
+}
+
+
+// void digital_tree::remove(const std::string & key) {
+// /*
+//  Casos:
+//     1. A chave não tem nenhum prefixo comum a outra chave -> apaga todos os nós
+//     2. A chave tem prefixo em comum com alguma outra chave -> apaga todos os nós após maior prefixo
+//     3. A chave é prefixo válido de alguma chave -> Desliga o bit terminal do último nó
+// */
+//    if (search(key)) {
+//     auto last_node {std::get<0>(__rem_search(key))};
+//     auto last_pos {std::get<1>(__rem_search(key))};
+//         // If the last node is a prefix, we'll set the terminal bit to false
+//         if (last_node->get_terminal()) {
+//             if (is_prefix(last_node)) {
+//                 last_node->set_terminal(false);
+//                 return;
+//             }
+//             // How are we going to traverse upwards without recursion?
+//             while () {
+
+//             }
+//         }
+//      } else {
+//     std::cerr << "Key not found." << std::endl; // TODO: Replace with an exception
+//    }
+
+/*
+    remove(k, l, bool) {
+        faz o traverse
+        se o ultimo no tem filho, desliga o terminal
+        senao, se ptr != ptr_prefix, deleta e return
+        senao, return
+    
     }
-    return prefix_node;
+*/
+
+// Recursive remove operation
+void digital_tree::__rem(digital_tree::NodePtr ptr, const std::string & key, std::size_t key_idx,
+                         digital_tree::NodePtr prefix_ptr) {
+    if (key_idx != key.size()) {
+        auto pointer_pos {digit_idx(key.at(key_idx))};
+        auto is_p = is_prefix(ptr, key_idx);
+        prefix_ptr = is_p ? ptr : prefix_ptr;
+        __rem(ptr->get_pointers()[pointer_pos], key, key_idx + 1, prefix_ptr);
+    }
+    DEBUG_MSG("Entrou na parte do delete");
+    if (key_idx == key.size() - 1 and is_prefix(ptr)) {
+        DEBUG_MSG("é prefixo");
+        DEBUG_MSG("key_idx" << key_idx);
+        ptr->set_terminal(false);
+        return;
+    } else if (ptr != prefix_ptr) {
+        DEBUG_MSG("é ultimo prefixo");
+        DEBUG_MSG("key_idx" << key_idx);
+        ptr.reset();
+        return;
+    } else {
+        return;
+    }
 }
 
 void digital_tree::remove(const std::string & key) {
-/*
- Casos:
-    1. A chave não tem nenhum prefixo comum a outra chave -> apaga todos os nós
-    2. A chave tem prefixo em comum com alguma outra chave -> apaga todos os nós após maior prefixo
-    3. A chave é prefixo válido de alguma chave -> Desliga o bit terminal do último nó
-*/
-   if (search(key)) {
-    
-   } else {
-    std::cerr << "Key not found." << std::endl; // TODO: Replace with an exception
-   }
+    if (search(key)) {
+    __rem(root, key, 0, root);
+    } else {
+        std::cerr << "Key \"" << key << "\" not found" << std::endl;
+    }
+}
+
+void digital_tree::print_rec(digital_tree::NodePtr ptr, std::string & str, std::size_t curr_digit) const {
+    str += alphabet[curr_digit];
+    if (ptr->get_terminal()) {
+        DEBUG_MSG(str);
+    }
+    bool end_of_path {false};
+    for (auto i {0}; i < alphabet.size(); i++) {
+        if (ptr->get_pointers()[i] != nullptr) {
+            end_of_path = true;
+            print_rec(ptr->get_pointers()[i], str, i);
+        }
+    }
+    str = end_of_path ? "" : str;
+}
+
+void digital_tree::print() const {
+    std::string str {""};
+    for (std::size_t i {0}; i < alphabet.size(); i++) {
+        if (root->get_pointers()[i] != nullptr) {
+            print_rec(root->get_pointers()[i], str, i);
+        }
+    }
 }
 
 
