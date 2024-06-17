@@ -36,5 +36,14 @@ int main() {
     } else {
         LOG("Remove Funciona");
     }
+
+   for (auto key : keys) {
+        test1.remove(key);
+    }
+    if (test1.is_empty()) {
+        LOG("is_empty funciona.");
+    } else {
+        LOG("is_empty não funciona.");
+    }
     return 0;
 }

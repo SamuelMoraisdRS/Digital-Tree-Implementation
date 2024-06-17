@@ -3,7 +3,7 @@
 #include <tuple>    
 #include <sstream>
 
-//  Comment the line below if you don't want to print the debug msgs
+///  Comment the line below if you don't want to print the debug msgs
 #define DEBUG
 
 #ifdef DEBUG
@@ -28,25 +28,6 @@ digital_tree::digital_tree(std::vector<char> a, std::vector<std::string> keys) {
     }
 }
 
-// Suposing the list is sorted already
-std::size_t bin_search(const std::vector<char> & list, char c) {
-    std::size_t left {0};
-    std::size_t right {list.size() - 1};
-    while (left < right) {
-        std::size_t mid {(left + right) / 2};
-        if (list[mid] == c) {
-            return mid;
-        } else if (list[mid] < c) {
-            right = mid;
-        } else {
-            left = mid;
-        }
-    } 
-    ///TODO: replace with an exception
-    return -1;     
-}
-
-
 std::size_t digital_tree::digit_idx(char c) {
     ///TODO: replace with a binary search
     for (std::size_t i {0}; i < alphabet.size(); i++) {
@@ -56,7 +37,7 @@ std::size_t digital_tree::digit_idx(char c) {
      }  return -1;
 }    
 
-///TODO: there must be a way to use the 'prefix_sz' size reference parameter instead of returning a pair
+///TODO: there must be a way to use the 'prefix_sz' size reference (&) parameter instead of returning a pair
 std::pair<std::size_t, digital_tree::NodePtr> digital_tree::__search(const std::string & key) {
     auto ptr = root;
     std::size_t prefix_sz {0};
@@ -100,9 +81,10 @@ void digital_tree::insert(const std::string & key) {
         // Sets the last node as a terminal bit
         ptr->set_terminal(true);
         return;
-    } std::cerr << "Key already exists: \"" << key << "\"" << std::endl; // TODO: replace with an exception
+    }
+    ///TODO: replace with an exception 
+    std::cerr << "Key already exists: \"" << key << "\"" << std::endl; 
 }
-
 
 bool digital_tree::is_prefix(digital_tree::NodePtr n, std::size_t char_idx) const {
     for (std::size_t i {0}; i < n->get_pointers().size(); i++) {
@@ -123,15 +105,14 @@ void digital_tree::__rem(digital_tree::NodePtr & ptr, const std::string & key, s
                          digital_tree::NodePtr prefix_ptr) {
     if (key_idx != key.size()) {
         auto pointer_pos {digit_idx(key.at(key_idx))};
-        auto is_p = is_prefix(ptr, key_idx);
-        prefix_ptr = is_p ? ptr : prefix_ptr;
+        prefix_ptr = is_prefix(ptr, key_idx) ? ptr : prefix_ptr;
         __rem(ptr->get_pointers()[pointer_pos], key, key_idx + 1, prefix_ptr);
     }
     if (key_idx == key.size() - 1 and is_prefix(ptr)) {
         ptr->set_terminal(false);
         return;
     } else if (ptr != prefix_ptr) {
-        ptr.reset();
+        ptr.reset();    /// Frees unique_pointer
         return;
     } else {
         return;
@@ -147,8 +128,8 @@ void digital_tree::remove(const std::string & key) {
     }
 }
 
-void digital_tree::print_rec(digital_tree::NodePtr ptr, std::string & curr_str, std::size_t curr_digit
-                             , std::stringstream & return_str) const {
+void digital_tree::print_rec(digital_tree::NodePtr ptr, std::string & curr_str, std::size_t curr_digit,
+                             std::stringstream & return_str) const {
     curr_str += alphabet[curr_digit];
     if (ptr->get_terminal()) {
         return_str << "\"" <<curr_str << "\";" << std::endl;
