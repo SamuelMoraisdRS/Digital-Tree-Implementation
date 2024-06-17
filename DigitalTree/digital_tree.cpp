@@ -1,33 +1,33 @@
-
 #include "digital_tree.h"
+#include <algorithm>    // std::sort
+#include <tuple>    
 
-// Comment this line if you don't want the debug msgs to be shown
-// #define DEBUG
+//  Comment the line below if you don't want to print the debug msgs
+#define DEBUG
 
 #ifdef DEBUG
     #define DEBUG_MSG(str) do { std::cout << str << std::endl; } while( false )
 #else
-    #define DEBUG_MSG(str) do { } while( false )
+    #define DEBUG_MSG(str) do {/* Nothing */} while( false )
 #endif
 
-// TODO: replace the 'std::cout' debugs for the debug function
-
 digital_tree::digital_tree(std::vector<char> a, std::vector<std::string> keys) {
+    std::sort(a.begin(), a.end());
     alphabet = a;
     for (std::string e : keys) {
-        DEBUG_MSG("Ctro: Chaves -> " << e);
+        DEBUG_MSG("Ctro: Keys -> " << e);
         key_bank.push_back(e);
     }
     root = std::make_shared<Node>(false, alphabet.size()); 
-    // std::cout << "Teve segfault\n";
     for (auto e : key_bank) {
-        DEBUG_MSG("Ctro: Chave a ser inserida -> " << e);
+        DEBUG_MSG("Ctro: Inserted key -> " << e);
         insert(e);
     }
-    // std::cout << "\n\n";
+    DEBUG_MSG("\n\n");
 }
 
 std::size_t digital_tree::digit_idx(char c) {
+    // TODO : replace with a binary search
     for (std::size_t i {0}; i < alphabet.size(); i++) {
         if (alphabet[i] == c) {
             return i;
@@ -35,81 +35,160 @@ std::size_t digital_tree::digit_idx(char c) {
     } return -1;    // TODO: replace with an exception
 }
 
-std::pair<std::size_t, std::shared_ptr<digital_tree::Node>> digital_tree::__search(const std::string & key) {
+std::pair<std::size_t, digital_tree::NodePtr> digital_tree::__search(const std::string & key) {
     auto ptr = root;
-    // DEBUG_MSG("segfault\n");
     std::size_t prefix_sz {0};
     while (prefix_sz != key.size()) {
-        DEBUG_MSG("__search: iteração do loop");;
         auto pointer_pos {digit_idx(key.at(prefix_sz))};
         if (ptr->get_pointers()[pointer_pos].get() != nullptr) {
-            DEBUG_MSG("__search: chegou no normal");
             prefix_sz++;
             ptr = ptr->get_pointers()[pointer_pos];
         } else {
-            DEBUG_MSG("__search: chegou no break");
             break;
         }  
     }
-    DEBUG_MSG("Fim do __search");
     return std::make_pair(prefix_sz, ptr);
 }
 
-
-
 bool digital_tree::search(const std::string & key) {
-    // std::cout << "entra search\n";
     auto ptr = root;
-    // std::cout << "1\n";
     std::size_t prefix_sz {0};
     while (prefix_sz != key.size()) {
-    // std::cout << "itera while\n";
         auto pointer_pos {digit_idx(key.at(prefix_sz))};
-        // std::cout << "pos = " << pointer_pos << std::endl;
         if (ptr->get_pointers()[pointer_pos].get() != nullptr) {
-        // std::cout << "entra if\n";
             prefix_sz++;
             ptr = ptr->get_pointers()[pointer_pos];
         } else {
-            // std::cout << "Encontrou caractere que não esta na string\n";
             return false;
         }
     }
-    // std::cout << "sai if\n";
-    if (ptr->get_terminal()) {
-        return true;
+    return ptr->get_terminal();
+}
+
+void digital_tree::insert(const std::string & key) {
+    if (not search(key)) {
+        auto prefix_sz {__search(key)};
+        auto char_runner {prefix_sz.first};
+        auto ptr = prefix_sz.second;
+        while (char_runner < key.size()) {
+            auto pointer_pos {digit_idx(key.at(char_runner))};
+            ptr->get_pointers()[pointer_pos] = std::make_shared<Node>(false, alphabet.size());
+            ptr = ptr->get_pointers()[pointer_pos];
+            char_runner++;
+        }
+        // Sets the last node's terminal bit
+        ptr->set_terminal(true);
+        return;
+    } std::cerr << "Key already exists: \"" << key << "\"" << std::endl; // TODO: replace with an exception
+}
+
+
+bool digital_tree::is_prefix(digital_tree::NodePtr n, std::size_t char_idx) const {
+    for (std::size_t i {0}; i < n->get_pointers().size(); i++) {
+        if (i == char_idx && n->get_pointers()[i] != nullptr) {
+            return true;
+        }
+    } return false;
+}
+bool digital_tree::is_prefix(digital_tree::NodePtr n) const {
+    for (std::size_t i {0}; i < n->get_pointers().size(); i++) {
+        if (n->get_pointers()[i] != nullptr) {
+            return true;
+        }
     } return false;
 }
 
 
+// void digital_tree::remove(const std::string & key) {
+// /*
+//  Casos:
+//     1. A chave não tem nenhum prefixo comum a outra chave -> apaga todos os nós
+//     2. A chave tem prefixo em comum com alguma outra chave -> apaga todos os nós após maior prefixo
+//     3. A chave é prefixo válido de alguma chave -> Desliga o bit terminal do último nó
+// */
+//    if (search(key)) {
+//     auto last_node {std::get<0>(__rem_search(key))};
+//     auto last_pos {std::get<1>(__rem_search(key))};
+//         // If the last node is a prefix, we'll set the terminal bit to false
+//         if (last_node->get_terminal()) {
+//             if (is_prefix(last_node)) {
+//                 last_node->set_terminal(false);
+//                 return;
+//             }
+//             // How are we going to traverse upwards without recursion?
+//             while () {
 
-void digital_tree::insert(const std::string & key) {
-    DEBUG_MSG("Insert : MENSAGEM A SER INSERIDA -> " << key);
-    if (not search(key)) {
-        // std::cout << "entra insert\n";
-        auto prefix_sz {__search(key)};
-        auto char_runner {prefix_sz.first};
-        auto ptr = prefix_sz.second;
-        DEBUG_MSG("Insert: Char_runner sz: " << char_runner);
-        while (char_runner < key.size()) {
-            DEBUG_MSG("Insert: Itera loop");
-            // Encontra a posicao do proximo digito no alfabeto
-            auto pointer_pos {digit_idx(key.at(char_runner))};
-            DEBUG_MSG("Insert: valor do pointer position: " << pointer_pos);
+//             }
+//         }
+//      } else {
+//     std::cerr << "Key not found." << std::endl; // TODO: Replace with an exception
+//    }
 
-            // Checks if we have a terminal Node
-            bool is_terminal {char_runner != key.size() - 1 ? true : false};
-            DEBUG_MSG("Insert: Vai fazer a atribuicao");
-            ptr->get_pointers()[pointer_pos] = std::make_shared<Node>(is_terminal, alphabet.size());
-            DEBUG_MSG("Insert: Checando se o ponteiro do proximo é null: " << ptr->get_pointers()[pointer_pos].get());
-            ptr = ptr->get_pointers()[pointer_pos];
-            DEBUG_MSG("Insert: Checando se o o novo valor de 'ptr' é null: " << ptr.get());
-            char_runner++;
-        }
-        // Sets the last node as a terminal bit
-        ptr->set_terminal();
+/*
+    remove(k, l, bool) {
+        faz o traverse
+        se o ultimo no tem filho, desliga o terminal
+        senao, se ptr != ptr_prefix, deleta e return
+        senao, return
+    
+    }
+*/
+
+// Recursive remove operation
+void digital_tree::__rem(digital_tree::NodePtr ptr, const std::string & key, std::size_t key_idx,
+                         digital_tree::NodePtr prefix_ptr) {
+    if (key_idx != key.size()) {
+        auto pointer_pos {digit_idx(key.at(key_idx))};
+        auto is_p = is_prefix(ptr, key_idx);
+        prefix_ptr = is_p ? ptr : prefix_ptr;
+        __rem(ptr->get_pointers()[pointer_pos], key, key_idx + 1, prefix_ptr);
+    }
+    DEBUG_MSG("Entrou na parte do delete");
+    if (key_idx == key.size() - 1 and is_prefix(ptr)) {
+        DEBUG_MSG("é prefixo");
+        DEBUG_MSG("key_idx" << key_idx);
+        ptr->set_terminal(false);
         return;
-    } std::cerr << "Chave ja existente: " << key << std::endl; // TODO: replace with an exception
+    } else if (ptr != prefix_ptr) {
+        DEBUG_MSG("é ultimo prefixo");
+        DEBUG_MSG("key_idx" << key_idx);
+        ptr.reset();
+        return;
+    } else {
+        return;
+    }
+}
+
+void digital_tree::remove(const std::string & key) {
+    if (search(key)) {
+    __rem(root, key, 0, root);
+    } else {
+        std::cerr << "Key \"" << key << "\" not found" << std::endl;
+    }
+}
+
+void digital_tree::print_rec(digital_tree::NodePtr ptr, std::string & str, std::size_t curr_digit) const {
+    str += alphabet[curr_digit];
+    if (ptr->get_terminal()) {
+        DEBUG_MSG(str);
+    }
+    bool end_of_path {false};
+    for (auto i {0}; i < alphabet.size(); i++) {
+        if (ptr->get_pointers()[i] != nullptr) {
+            end_of_path = true;
+            print_rec(ptr->get_pointers()[i], str, i);
+        }
+    }
+    str = end_of_path ? "" : str;
+}
+
+void digital_tree::print() const {
+    std::string str {""};
+    for (std::size_t i {0}; i < alphabet.size(); i++) {
+        if (root->get_pointers()[i] != nullptr) {
+            print_rec(root->get_pointers()[i], str, i);
+        }
+    }
 }
 
 
